@@ -39,6 +39,12 @@ var CalendarEvent = /** @class */ (function () {
         var errorTimes = this.eventStart.createErrorTimes();
         this.gCalendarEvent = this.gCalendar.createEvent("THERE WAS AN ERROR WITH THIS EVENT: ".concat(this.eventTitle), errorTimes.startTime, errorTimes.endTime);
     };
+    /**
+     * 
+     * @returns integer
+     *      true if event failed to add
+     *      false if event added successfully
+     */
     CalendarEvent.prototype.addToCalendar = function () {
         if (this.isAllDayEvent) {
             var rowStartDate = this.eventStart.createDate(this.isAllDayEvent);
@@ -65,6 +71,7 @@ var CalendarEvent = /** @class */ (function () {
                 }
                 if (tries >= maxTries) {
                     Logger.log("Failed to add all day event: ".concat(this.eventTitle));
+                    return false;
                 }  
             }          
         }
@@ -89,9 +96,11 @@ var CalendarEvent = /** @class */ (function () {
                 }
                 if (tries >= maxTries) {
                     Logger.log("Failed to add timed event: ".concat(this.eventTitle));
+                    return false;
                 }
             }    
         }
+        return true;
     };
     CalendarEvent.prototype.getEventDescription = function () {
         return "\n    Location: ".concat(this.location, " \n    In Charge (w/in the city): ").concat(this.inCharge, "\n    Additional Assignments: ").concat(this.additionalAssigments, "\n    ");
@@ -108,8 +117,7 @@ var CalendarEvent = /** @class */ (function () {
     CalendarEvent.prototype.tryAddingToCalendar = function () {
         var addWasSuccessful;
         try {
-            this.addToCalendar();
-            addWasSuccessful = true;
+            addWasSuccessful = this.addToCalendar();
         }
         catch (error) {
             Logger.log("Error adding event to calendar: ".concat(this.eventTitle));
@@ -118,7 +126,9 @@ var CalendarEvent = /** @class */ (function () {
             this.gCalendarEvent.setDescription(error.message);
             addWasSuccessful = false;
         }
-        this.setTags();
+        if (addWasSuccessful) {
+            this.setTags();
+        }
         return addWasSuccessful;
     };
     return CalendarEvent;

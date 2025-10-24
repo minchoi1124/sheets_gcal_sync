@@ -98,34 +98,28 @@ var WeekSheet = /** @class */ (function () {
             //Logger.log(row);
 
             // Different error handling things
-            var startTime = row[0][ONESTOP_COLUMN_VALUES.START - 1];
-            var endTime = row[0][ONESTOP_COLUMN_VALUES.END - 1];
-            var what = row[0][ONESTOP_COLUMN_VALUES.WHAT - 1];
-
-            var startTimeString = String(startTime);
-            var endTimeString = String(endTime);
-            var whatString = String(what);
+            var ministry = String(row[0][ONESTOP_COLUMN_VALUES.MINISTRY - 1]);
+            var startTime = String(row[0][ONESTOP_COLUMN_VALUES.START - 1]);
+            var endTime = String(row[0][ONESTOP_COLUMN_VALUES.END - 1]);
+            var what = String(row[0][ONESTOP_COLUMN_VALUES.WHAT - 1]);
             
-            var isRowEmpty = (startTimeString == "") &&
-                             (endTimeString == "") &&
-                             (whatString == "");
-            var missingStartTime = (startTimeString == "");
-            var missingEndTime = (endTimeString == "");
-            var missingWhat = (whatString == "");
+            var hasMinistry = (ministry !== "");
+            var hasStartTime = (startTime !== "");
+            var hasEndTime = (endTime !== "");
+            var hasWhat = (what !== "");
+
+            var isRowFull = hasMinistry && hasStartTime && hasEndTime && hasWhat;
+            var isAllDayEvent = hasMinistry && !hasStartTime && !hasEndTime && hasWhat;
 
             var possibleDate = new Date(this.gSheet.getRange(i, 2).getCell(1, 1).getValue());
-            var startTimeIsDate = !(possibleDate.getFullYear() == 1899) && !missingStartTime && missingEndTime;
+            var startTimeIsDate = !(possibleDate.getFullYear() == 1899) && hasStartTime && !hasEndTime;
 
-
-            if (isRowEmpty) { continue; }
-            if (missingStartTime && !missingEndTime) { continue;}
-            if (!missingStartTime && missingEndTime && !startTimeIsDate) { continue; }
-
+            if (!isRowFull && !isAllDayEvent && !startTimeIsDate) {
+                Logger.log("Row ".concat(i, " is an empty or incomplete row"));
+                continue;
+            }
 
             if (startTimeIsDate) {
-                Logger.log("Row ".concat(i, " is a date row with possible date ").concat(possibleDate));
-                Logger.log("Row ".concat(i, " missing start time: ").concat(missingStartTime, ", missing end time: ").concat(missingEndTime, ", start time is date: ").concat(startTimeIsDate));
-                Logger.log("startTimeString: '".concat(startTimeString));
                 this.dailyData.push(new DaySection(possibleDate.getFullYear(), possibleDate.getMonth(), possibleDate.getDate()));
             }
             else {
@@ -153,7 +147,7 @@ var WeekSheet = /** @class */ (function () {
                 }
             }
         }
-        Logger.log(mostRecentDay);
+        //Logger.log(mostRecentDay);
     };
     return WeekSheet;
 }());

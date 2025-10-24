@@ -4,6 +4,7 @@ These are the behaviors required for basic functionality.
 ### General 
 - [ ] The calendars shall update five minutes after the spreadsheet is updated.
 - [x] The link is not bi-directional. Updating the calendars will not update the Onestop.
+- [ ] After processing an update, the updating cell value should be set to false
 
 ### Time based conflicts
 - [ ] A new update request cancels all pending updates on their five minute timer. This, in theory, prevents multiple updates being processed at the same time. If a new update request is made at 10:00.00 AM, and a second new update request is made at 10:00.01 AM, the first update request will be canceled. 

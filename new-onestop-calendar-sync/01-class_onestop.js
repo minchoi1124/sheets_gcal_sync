@@ -79,6 +79,7 @@ var Onestop = /** @class */ (function () {
     };
     Onestop.prototype.setIsBeingUpdated = function (isBeingUpdated) {
         this.isUpdatingCell.setValue(isBeingUpdated);
+        Logger.log("Set updating cell to ".concat(isBeingUpdated));
     };
     return Onestop;
 }());
