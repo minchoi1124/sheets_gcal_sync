@@ -25,29 +25,34 @@ var OnestopCalendarController = /** @class */ (function () {
         weekSheet.dailyData.forEach(function (daySection) {
             Logger.log("Creating events for ".concat(daySection.dateData.month, "/").concat(daySection.dateData.day));
             daySection.eventsData.forEach(function (event) {
-                Logger.log("Attempting to add ".concat(JSON.stringify(event)));
                 var calendar = _this.ministryCalendars[event.ministry];
-                calendar.addEventToCalendar(daySection.dateData, event, { week: weekSheet.sheetName });
+                var success = calendar.addEventToCalendar(daySection.dateData, event, { week: weekSheet.sheetName });
+                if (!success) {
+                    Logger.log("Failed to add: ".concat(JSON.stringify(event)));
+                }
             });
         });
     };
     OnestopCalendarController.createEventsForWeekByMinistry = function (weekSheet, ministry) {
         var calendar = this.ministryCalendars[ministry];
         weekSheet.dailyData.forEach(function (daySection) {
-            Logger.log("Ministry: ".concat(ministry));
-            Logger.log("daySection.eventsData:\n".concat(JSON.stringify(daySection.eventsData)));
+            //Logger.log("Ministry: ".concat(ministry));
+            //Logger.log("daySection.eventsData:\n".concat(JSON.stringify(daySection.eventsData)));
 
             daySection.getEventDataByMinistry(ministry).forEach(function (event) {
-                Logger.log("Attempting to add ".concat(JSON.stringify(event)));
+                //Logger.log("Attempting to add ".concat(JSON.stringify(event)));
 
                 var eventWasSuccessfullyAdded = calendar.addEventToCalendar(daySection.dateData, event, { week: weekSheet.sheetName });
-                if (eventWasSuccessfullyAdded) {
-                    if (weekSheet.isErroringRow(event.row)) {
-                        weekSheet.restoreErrorRow(event.row);
-                    }
-                }
-                else {
-                    weekSheet.makeErrorRowObvious(event.row);
+                // if (eventWasSuccessfullyAdded) {
+                //     if (weekSheet.isErroringRow(event.row)) {
+                //         weekSheet.restoreErrorRow(event.row);
+                //     }
+                // }
+                // else {
+                //     weekSheet.makeErrorRowObvious(event.row);
+                // }
+                if (!eventWasSuccessfullyAdded) {
+                    Logger.log("Failed to add: ".concat(JSON.stringify(event)));
                 }
             });
         });

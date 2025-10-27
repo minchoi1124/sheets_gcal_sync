@@ -32,7 +32,7 @@ var Onestop = /** @class */ (function () {
         return new Date(Math.min.apply(Math, firstDayTimestamps));
     };
     Onestop.prototype.getHashes = function () {
-        console.log('weeks?', this.weeks);
+        //console.log('weeks?', this.weeks);
         return this.weeks.reduce(function (weekHashData, week) {
             var _a;
             var hashWeekName = week.sheetName.replace(/\(WIP\)$/, '').trim();
