@@ -80,6 +80,23 @@ var WeekSheet = /** @class */ (function () {
         var noteCell = eventRange.getCell(1, ONESTOP_COLUMN_VALUES.NOTE);
         noteCell.setValue(noteCell.getValue().replace(this.errorNote, ''));
     };
+    WeekSheet.prototype.getMinistry = function (tag) {
+        // If the tag is an existing ministry, return it
+        if (Object.keys(alt_tags).includes(tag)) {
+            return tag;
+        }
+
+        // If the tag is not an existing ministry, we need to map it to an existing ministry
+        for (var ministry in alt_tags) {
+            for (var alt_tag in alt_tags[ministry]) {
+                if (alt_tags[ministry][alt_tag] === tag) {
+                    //Logger.log("Tag: [".concat(tag, "] matches alt_tag: [").concat(alt_tags[ministry][alt_tag], "] for ministry: ").concat(ministry));
+                    return ministry;
+                }
+            }
+        }
+        return null;
+    }
     WeekSheet.prototype.setWeekData = function () {
 
         // var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('8/25-8/31 (WK1)');
@@ -99,19 +116,20 @@ var WeekSheet = /** @class */ (function () {
             var row = this.gSheet.getRange(i, 1, 1, 11).getValues();
             //Logger.log(row);
 
+            var tag = String(row[0][ONESTOP_COLUMN_VALUES.MINISTRY - 1]);
+
             // Different error handling things
-            var ministry = String(row[0][ONESTOP_COLUMN_VALUES.MINISTRY - 1]);
             var startTime = String(row[0][ONESTOP_COLUMN_VALUES.START - 1]);
             var endTime = String(row[0][ONESTOP_COLUMN_VALUES.END - 1]);
             var what = String(row[0][ONESTOP_COLUMN_VALUES.WHAT - 1]);
             
-            var hasMinistry = (ministry !== "");
+            var hasTag = (tag !== "");
             var hasStartTime = (startTime !== "");
             var hasEndTime = (endTime !== "");
             var hasWhat = (what !== "");
 
-            var isRowFull = hasMinistry && hasStartTime && hasEndTime && hasWhat;
-            var isAllDayEvent = hasMinistry && !hasStartTime && !hasEndTime && hasWhat;
+            var isRowFull = hasTag && hasStartTime && hasEndTime && hasWhat;
+            var isAllDayEvent = hasTag && !hasStartTime && !hasEndTime && hasWhat;
 
             var possibleDate = new Date(this.gSheet.getRange(i, 2).getCell(1, 1).getValue());
             var startTimeIsDate = !(possibleDate.getFullYear() == 1899) && hasStartTime && !hasEndTime;
@@ -123,9 +141,14 @@ var WeekSheet = /** @class */ (function () {
 
             if (startTimeIsDate) {
                 this.dailyData.push(new DaySection(possibleDate.getFullYear(), possibleDate.getMonth(), possibleDate.getDate()));
-            }
+            } 
             else {
                 var eventData = this.eventDataFromRow(i);
+                eventData.ministry = this.getMinistry(tag);
+                if (eventData.ministry === null) {
+                    Logger.log("Row ".concat(i, " has an invalid ministry tag: ").concat(tag));
+                    continue;
+                }
                 if (eventData.what && !eventData.struckThrough) {
                     var mostRecentDay = this.dailyData[this.dailyData.length - 1];
                     //Logger.log("mostRecentDay: ".concat(JSON.stringify(mostRecentDay.dateData)));
