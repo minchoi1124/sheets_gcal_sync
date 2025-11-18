@@ -182,7 +182,7 @@ var WeekSheet = /** @class */ (function () {
 
                 if (eventData.what && !eventData.struckThrough) {
                     var mostRecentDay = this.dailyData[this.dailyData.length - 1];
-                    //Logger.log("mostRecentDay: ".concat(JSON.stringify(mostRecentDay.dateData)));
+                    Logger.log("mostRecentDay: ".concat(JSON.stringify(mostRecentDay.dateData)));
 
                     eventData.startTimeDate.setFullYear(mostRecentDay.dateData.year);
                     eventData.startTimeDate.setMonth(mostRecentDay.dateData.month);
