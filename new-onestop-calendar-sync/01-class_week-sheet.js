@@ -8,13 +8,12 @@ var DaySection = /** @class */ (function () {
         this.eventsData.push(eventData);
     };
     DaySection.prototype.getEventDataByMinistry = function (ministry) {
-        // Logger.log("Ministry: ", ministry);
-        // Logger.log("EventsData: ", this.eventsData);
-
+        // All events are "Weekly" ministry
         return this.eventsData.filter(function (event) { return event.ministry === ministry; });
     };
     return DaySection;
 }());
+
 var WeekSheet = /** @class */ (function () {
     function WeekSheet(gSheet) {
         this.errorNote = '\n\nTHIS ROW IS CAUSING AN ERROR IN THE CALENDAR, IT\'S PROBABLY THE START OR END TIME\n\n';
@@ -22,189 +21,255 @@ var WeekSheet = /** @class */ (function () {
         this.dailyData = [];
         this.sheetName = gSheet.getName();
         this.numEvents = 0;
+        
+        // Detect which format this sheet uses
+        this.detectFormat();
+        
+        // Parse dates from sheet name BEFORE loading data
+        this.parseDatesFromSheetName();
+        
         this.setWeekData();
-        var startAndEndDateRegex = /\b\d{1,2}\/\d{1,2}(?=\D)/g;
-        var _a = this.sheetName.match(startAndEndDateRegex), firstDayString = _a[0], lastDayString = _a[1];
-        var firstDayYear = this.getYearForMonth(firstDayString.split('/')[0]);
-        var lastDayYear = this.getYearForMonth(lastDayString.split('/')[0]);
-        this.firstDay = new Date("".concat(firstDayString, "/").concat(firstDayYear));
-        this.lastDay = new Date("".concat(lastDayString, "/").concat(lastDayYear));
-        this.lastDay.setHours(23, 59, 59, 999);
     }
-    WeekSheet.prototype.getYearForMonth = function (month) {
-        if (new Date().getMonth() >= 10 && month <= 2) {
-            return new Date().getFullYear() + 1;
+    
+    // Static method to parse dates from sheet name without creating full object
+    WeekSheet.parseDatesFromName = function(sheetName) {
+        var name = sheetName.replace(/\s*\(WIP\)\s*$/, '').trim();
+        var dateMatch = name.match(/([0-9]{1,2}\/[0-9]{1,2}).*?-.*?([0-9]{1,2}\/[0-9]{1,2})/);
+        
+        if (dateMatch && dateMatch.length >= 3) {
+            var startNum = dateMatch[1];
+            var endNum = dateMatch[2];
+            
+            var startMonth, startDay, endMonth, endDay;
+            
+            if (startNum.length <= 3) {
+                startMonth = parseInt(startNum[0]);
+                startDay = parseInt(startNum.substring(2));
+            } else if (startNum.length === 4) {
+                if (startNum[1] !== '/') {
+                    startMonth = parseInt(startNum.substring(0, 2));
+                    startDay = parseInt(startNum[3]);
+                } else {
+                    startMonth = parseInt(startNum[0]);
+                    startDay = parseInt(startNum.substring(2));
+                }
+            } else {
+                startMonth = parseInt(startNum.substring(0, 2));
+                startDay = parseInt(startNum.substring(3));
+            }
+            
+            if (endNum.length <= 3) {
+                endMonth = parseInt(endNum[0]);
+                endDay = parseInt(endNum.substring(2));
+            } else if (endNum.length === 4) {
+                if (endNum[1] !== '/') {
+                    endMonth = parseInt(endNum.substring(0, 2));
+                    endDay = parseInt(endNum[3]);
+                } else {
+                    endMonth = parseInt(endNum[0]);
+                    endDay = parseInt(endNum.substring(2));
+                }
+            } else {
+                endMonth = parseInt(endNum.substring(0, 2));
+                endDay = parseInt(endNum.substring(3));
+            }
+            
+            var currentYear = new Date().getFullYear();
+            var currentMonth = new Date().getMonth() + 1;
+            
+            var startYear = currentYear;
+            var endYear = currentYear;
+            
+            if (currentMonth >= 11 && startMonth <= 2) {
+                startYear = currentYear + 1;
+                endYear = currentYear + 1;
+            } else if (currentMonth <= 2 && startMonth >= 11) {
+                startYear = currentYear - 1;
+                endYear = currentYear;
+            }
+            
+            if (endMonth < startMonth) {
+                endYear = startYear + 1;
+            }
+            
+            return {
+                firstDay: new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0),
+                lastDay: new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+            };
         }
-        return new Date().getFullYear();
+        
+        return null;
     };
+    
+    WeekSheet.prototype.detectFormat = function () {
+        // Check first row to see if it has "MIN GROUP" column
+        var firstCell = this.gSheet.getRange(1, 1).getValue();
+        if (firstCell === 'MIN GROUP') {
+            this.columnValues = ONESTOP_COLUMN_VALUES_FORMAT1;
+            this.hasMinGroupColumn = true;
+        } else {
+            this.columnValues = ONESTOP_COLUMN_VALUES_FORMAT2;
+            this.hasMinGroupColumn = false;
+        }
+        Logger.log("Sheet ".concat(this.sheetName, " uses format ").concat(this.hasMinGroupColumn ? '1 (with MIN GROUP)' : '2 (without MIN GROUP)'));
+    };
+    
+    WeekSheet.prototype.parseDatesFromSheetName = function () {
+        Logger.log("In parseDatesFromSheetName")
+        var dates = WeekSheet.parseDatesFromName(this.sheetName);
+        
+        if (dates) {
+            this.firstDay = dates.firstDay;
+            this.lastDay = dates.lastDay;
+        } else {
+            Logger.log("Warning: Could not parse dates from sheet name: " + this.sheetName);
+            var today = new Date();
+            this.firstDay = new Date(today);
+            this.firstDay.setHours(0, 0, 0, 0);
+            
+            this.lastDay = new Date(today);
+            this.lastDay.setDate(today.getDate() + 6);
+            this.lastDay.setHours(23, 59, 59, 999);
+        }
+        
+        Logger.log("Week ".concat(this.sheetName, ": ").concat(this.firstDay.toDateString(), " to ").concat(this.lastDay.toDateString()));
+    };
+    
     WeekSheet.prototype.eventDataFromRow = function (row) {
-        var eventRange = this.gSheet.getRange(row, 1, 1, 11);
+        var cols = this.columnValues;
+        var eventRange = this.gSheet.getRange(row, 1, 1, 10);
+        
         return {
             row: row,
-            ministry: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.MINISTRY).getValue(),
-            startTimeDate: new Date(eventRange.getCell(1, ONESTOP_COLUMN_VALUES.START).getValue()),
-            endTimeDate: new Date(eventRange.getCell(1, ONESTOP_COLUMN_VALUES.END).getValue()),
-            startTime: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.START).getValue(),
-            endTime: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.END).getValue(),
-            what: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.WHAT).getValue(),
-            location: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.LOCATION).getValue(),
-            inCharge: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.IN_CHARGE).getValue(),
-            whoElse: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.WHO_ELSE).getValue(),
-            food: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.FOOD).getValue(),
-            childcare: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.CHILD).getValue(),
-            //tech: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.TECH).getValue(),
-            note: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.NOTE).getValue(),
-            struckThrough: eventRange.getCell(1, ONESTOP_COLUMN_VALUES.WHAT).getFontLine() === 'line-through',
-            allDayEvent: IS_ALL_DAY(eventRange.getCell(1, ONESTOP_COLUMN_VALUES.START).getValue()) && IS_ALL_DAY(eventRange.getCell(1, ONESTOP_COLUMN_VALUES.END).getValue())
+            ministry: 'Weekly', // All events are Weekly
+            startTimeDate: new Date(eventRange.getCell(1, cols.START).getValue()),
+            endTimeDate: new Date(eventRange.getCell(1, cols.END).getValue()),
+            startTime: eventRange.getCell(1, cols.START).getValue(),
+            endTime: eventRange.getCell(1, cols.END).getValue(),
+            what: eventRange.getCell(1, cols.WHAT).getValue(),
+            location: eventRange.getCell(1, cols.LOCATION).getValue(),
+            inCharge: eventRange.getCell(1, cols.IN_CHARGE).getValue(),
+            whoElse: eventRange.getCell(1, cols.WHO_ELSE).getValue(),
+            food: eventRange.getCell(1, cols.FOOD).getValue(),
+            childcare: eventRange.getCell(1, cols.CHILDCARE).getValue(),
+            note: eventRange.getCell(1, cols.NOTE).getValue(),
+            struckThrough: eventRange.getCell(1, cols.WHAT).getFontLine() === 'line-through',
+            allDayEvent: IS_ALL_DAY(eventRange.getCell(1, cols.START).getValue()) && IS_ALL_DAY(eventRange.getCell(1, cols.END).getValue())
         };
     };
-    WeekSheet.prototype.isErroringRow = function (row) {
-        var eventRange = this.gSheet.getRange(row, 1, 1, 11);
-        var noteCell = eventRange.getCell(1, ONESTOP_COLUMN_VALUES.NOTE);
-        if (noteCell.getValue().includes(this.errorNote)) {
+    
+    WeekSheet.prototype.isRowDate = function (row) {
+        // Date rows have a datetime object in the first column (MIN GROUP or START TIME column)
+        var firstCell = row[0][0];
+        
+        // Check if it's a Date object
+        if (firstCell instanceof Date || Object.prototype.toString.call(firstCell) === '[object Date]') {
             return true;
         }
+        
+        // Also check if the cell contains a date string that can be parsed
+        if (typeof firstCell === 'string') {
+            var dateTest = new Date(firstCell);
+            if (!isNaN(dateTest.getTime()) && firstCell.match(/\d{1,2}\/\d{1,2}/)) {
+                return true;
+            }
+        }
+        
         return false;
     };
-    WeekSheet.prototype.makeErrorRowObvious = function (row) {
-        Logger.log("Row ".concat(row, " in sheet ").concat(this.sheetName, " has an error, attempting to change the formatting to make it obvious"));
-        var eventRange = this.gSheet.getRange(row, 1, 1, 11);
-        var noteCell = eventRange.getCell(1, ONESTOP_COLUMN_VALUES.NOTE);
-        if (!this.isErroringRow(row)) {
-            noteCell.setValue("".concat(noteCell.getValue()).concat(this.errorNote));
-        }
-    };
-    WeekSheet.prototype.restoreErrorRow = function (row) {
-        Logger.log("Error for row ".concat(row, " in sheet ").concat(this.sheetName, " has been fixed, attempting to restore"));
-        var eventRange = this.gSheet.getRange(row, 1, 1, 11);
-        var noteCell = eventRange.getCell(1, ONESTOP_COLUMN_VALUES.NOTE);
-        noteCell.setValue(noteCell.getValue().replace(this.errorNote, ''));
-    };
-    WeekSheet.prototype.getMinistry = function (tag) {
-        // If the tag is an existing ministry, return it
-        if (Object.keys(alt_tags).includes(tag)) {
-            return tag;
-        }
-
-        // If the tag is not an existing ministry, we need to map it to an existing ministry
-        for (var ministry in alt_tags) {
-            for (var alt_tag in alt_tags[ministry]) {
-                if (alt_tags[ministry][alt_tag] === tag) {
-                    //Logger.log("Tag: [".concat(tag, "] matches alt_tag: [").concat(alt_tags[ministry][alt_tag], "] for ministry: ").concat(ministry));
-                    return ministry;
-                }
-            }
-        }
-        return null;
-    }
-    /**
-     * @param {array} row 
-     * @returns bool: true if date row, false if not
-     */
-    WeekSheet.prototype.isRowDate = function (row) {
-        // Logger.log("isRowDate:");
-        for (var i = 0; i < row_regex.length; i++) {
-            var cellValue = String(row[0][i]);
-            if (row_regex[i].test(cellValue) == false) {
-                // Logger.log("[".concat(cellValue).concat("] does not match regex: ").concat(row_regex[i]));
-                return false
-            }
-        }
-        return true;
-    }
-    /**
-     * @param {array} row
-     * @return int: 1 if all-day event, 2 if normal event, 3 if a date row, 0 if invalid row
-     */
+    
     WeekSheet.prototype.getRowType = function (row, isDate) {
         if (isDate) {
-            return 3;
+            return 3; // Date row
         }
-
-        var tag = String(row[0][ONESTOP_COLUMN_VALUES.MINISTRY - 1]);
-        var startTime = String(row[0][ONESTOP_COLUMN_VALUES.START - 1]);
-        var endTime = String(row[0][ONESTOP_COLUMN_VALUES.END - 1]);
-        var what = String(row[0][ONESTOP_COLUMN_VALUES.WHAT - 1]);
-
-        var hasTag = (tag !== "");
-        var hasStartTime = (startTime !== "");
-        var hasEndTime = (endTime !== "");
-        var hasWhat = (what !== "");
-
-        var isRowFull = hasTag && hasStartTime && hasEndTime && hasWhat;
-        var isAllDayEvent = hasTag && !hasStartTime && !hasEndTime && hasWhat;
-
-        if (!isAllDayEvent && !isRowFull) {
-            return 0;
-        }
-        if (isAllDayEvent) {
-            return 1;
-        }
-        return 2;
-    }
         
+        var cols = this.columnValues;
+        var startTime = String(row[0][cols.START - 1]);
+        var endTime = String(row[0][cols.END - 1]);
+        var what = String(row[0][cols.WHAT - 1]);
+        
+        var hasStartTime = (startTime !== "" && startTime !== "null" && startTime !== "undefined");
+        var hasEndTime = (endTime !== "" && endTime !== "null" && endTime !== "undefined");
+        var hasWhat = (what !== "" && what !== "null" && what !== "undefined");
+        
+        // Valid event: has WHAT and either times or is all-day
+        if (hasWhat && (!hasStartTime && !hasEndTime)) {
+            return 1; // All-day event
+        }
+        if (hasWhat && hasStartTime) {
+            return 2; // Timed event
+        }
+        
+        return 0; // Invalid row
+    };
+    
     WeekSheet.prototype.setWeekData = function () {
-
         var numRows = this.gSheet.getMaxRows();
-        // TODO: Right how this assumes that the event data starts from row 2. This is error prone because it might not, so we might need to fix this in the future.
         this.numEvents = 0;
+        
         for (var i = 2; i <= numRows; i++) {
-        //for (var i = 2; i <= 20; i++) {
-            var row = this.gSheet.getRange(i, 1, 1, 11).getValues();
-            // Logger.log(row);
-
-            var rowDisplayValues = this.gSheet.getRange(i, 1, 1, 11).getDisplayValues();
-            var rowType = this.getRowType(row, this.isRowDate(rowDisplayValues));
-            //Logger.log("rowType: ".concat(rowType));
-
+            var row = this.gSheet.getRange(i, 1, 1, 10).getValues();
+            
+            var isDate = this.isRowDate(row);
+            var rowType = this.getRowType(row, isDate);
+            
             if (rowType === 0) {
-                continue;
+                continue; // Skip invalid rows
             }
+            
             if (rowType === 3) {
-                var possibleDate = new Date(this.gSheet.getRange(i, 2).getCell(1, 1).getValue());
-                this.dailyData.push(new DaySection(possibleDate.getFullYear(), possibleDate.getMonth(), possibleDate.getDate()));
-            } 
-            else {
-                var eventData = this.eventDataFromRow(i);
-
-                var tag = String(row[0][ONESTOP_COLUMN_VALUES.MINISTRY - 1]);
-                eventData.ministry = this.getMinistry(tag);
-                if (eventData.ministry === null) {
-                    Logger.log("Row ".concat(i, " has an invalid ministry tag: ").concat(tag));
+                // Date row
+                var dateCell = row[0][0];
+                var possibleDate = new Date(dateCell);
+                
+                if (!isNaN(possibleDate.getTime())) {
+                    this.dailyData.push(new DaySection(
+                        possibleDate.getFullYear(), 
+                        possibleDate.getMonth(), 
+                        possibleDate.getDate()
+                    ));
+                }
+            } else {
+                // Event row
+                if (this.dailyData.length === 0) {
+                    // No date section yet, skip this event
                     continue;
                 }
-
+                
+                var eventData = this.eventDataFromRow(i);
+                
                 if (rowType === 1) {
                     eventData.allDayEvent = true;
                 } else {
                     eventData.allDayEvent = false;
                 }
-
+                
                 if (eventData.what && !eventData.struckThrough) {
                     var mostRecentDay = this.dailyData[this.dailyData.length - 1];
-                    Logger.log("mostRecentDay: ".concat(JSON.stringify(mostRecentDay.dateData)));
-
-                    eventData.startTimeDate.setFullYear(mostRecentDay.dateData.year);
-                    eventData.startTimeDate.setMonth(mostRecentDay.dateData.month);
-                    eventData.startTimeDate.setDate(mostRecentDay.dateData.day);
-                    eventData.startTimeDate.setHours(eventData.startTimeDate.getHours() + 1);
-
-                    eventData.endTimeDate.setFullYear(mostRecentDay.dateData.year);
-                    eventData.endTimeDate.setMonth(mostRecentDay.dateData.month);
-                    eventData.endTimeDate.setDate(mostRecentDay.dateData.day);
-                    eventData.endTimeDate.setHours(eventData.endTimeDate.getHours() + 1);
-
-
-                    //Logger.log(eventData);
+                    
+                    // Set the date for start and end times
+                    if (!eventData.allDayEvent) {
+                        eventData.startTimeDate.setFullYear(mostRecentDay.dateData.year);
+                        eventData.startTimeDate.setMonth(mostRecentDay.dateData.month);
+                        eventData.startTimeDate.setDate(mostRecentDay.dateData.day);
+                        
+                        eventData.endTimeDate.setFullYear(mostRecentDay.dateData.year);
+                        eventData.endTimeDate.setMonth(mostRecentDay.dateData.month);
+                        eventData.endTimeDate.setDate(mostRecentDay.dateData.day);
+                    }
+                    
                     eventData.year = mostRecentDay.dateData.year;
                     eventData.month = mostRecentDay.dateData.month;
                     eventData.day = mostRecentDay.dateData.day;
+                    
                     mostRecentDay.addEventData(eventData);
                     this.numEvents += 1;
                 }
             }
         }
+        
         Logger.log("Events added for week sheet ".concat(this.sheetName, ": ").concat(this.numEvents));
     };
+    
     return WeekSheet;
 }());

@@ -36,21 +36,8 @@ var OnestopCalendarController = /** @class */ (function () {
     OnestopCalendarController.createEventsForWeekByMinistry = function (weekSheet, ministry) {
         var calendar = this.ministryCalendars[ministry];
         weekSheet.dailyData.forEach(function (daySection) {
-            //Logger.log("Ministry: ".concat(ministry));
-            //Logger.log("daySection.eventsData:\n".concat(JSON.stringify(daySection.eventsData)));
-
             daySection.getEventDataByMinistry(ministry).forEach(function (event) {
-                //Logger.log("Attempting to add ".concat(JSON.stringify(event)));
-
                 var eventWasSuccessfullyAdded = calendar.addEventToCalendar(daySection.dateData, event, { week: weekSheet.sheetName });
-                // if (eventWasSuccessfullyAdded) {
-                //     if (weekSheet.isErroringRow(event.row)) {
-                //         weekSheet.restoreErrorRow(event.row);
-                //     }
-                // }
-                // else {
-                //     weekSheet.makeErrorRowObvious(event.row);
-                // }
                 if (!eventWasSuccessfullyAdded) {
                     Logger.log("Failed to add: ".concat(JSON.stringify(event)));
                 }
@@ -86,22 +73,8 @@ var OnestopCalendarController = /** @class */ (function () {
         })
     }
     OnestopCalendarController.caldendarIds = {
-        Childcare: CHILDCARE_CALENDAR_ID,
-        ALL: CHURCHWIDE_CALENDAR_ID,
-        CPIs: COLLEGE_CALENDAR_ID,
-        Intl: INTL_CALENDAR_ID,
-        Youth: YOUTH_CALENDAR_ID,
-        Joyland: JOYLAND_CALENDAR_ID,
         Weekly: WEEKLY_CALENDAR_ID
     }
-    // OnestopCalendarController.ministryCalendars = {
-    //     Childcare: new CalendarWrapper(CHILDCARE_CALENDAR_ID),
-    //     Churchwide: new CalendarWrapper(CHURCHWIDE_CALENDAR_ID),
-    //     Domestic: new CalendarWrapper(COLLEGE_CALENDAR_ID),
-    //     INTL: new CalendarWrapper(INTL_CALENDAR_ID),
-    //     Youth: new CalendarWrapper(YOUTH_CALENDAR_ID),
-    //     Joyland: new CalendarWrapper(JOYLAND_CALENDAR_ID)
-    // };
     OnestopCalendarController.ministryCalendars = {};
     OnestopCalendarController.onestop = new Onestop();
     return OnestopCalendarController;

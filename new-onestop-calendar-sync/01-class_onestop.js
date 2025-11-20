@@ -25,14 +25,84 @@ var Onestop = /** @class */ (function () {
         Logger.log("Updating cell value is " + this.isUpdatingCell.getValue());
     }
     Onestop.prototype.getWeekSheets = function () {
-        return this.onestopSheet.getSheets().filter(function (sheet) { return !sheet.isSheetHidden(); }).filter(function (sheet) { return ONESTOP_WEEK_TAB_REGEX.test(sheet.getName()); });
+        var today = new Date();
+        var allWeekSheets = this.onestopSheet.getSheets()
+            .filter(function (sheet) { return !sheet.isSheetHidden(); })
+            // .filter(function (sheet) { return ONESTOP_WEEK_TAB_REGEX.test(sheet.getName()); });
+        
+        Logger.log(allWeekSheets.map(s => s.getName()).join("\n"));
+
+        // Find current week and next week
+        var relevantSheets = [];
+        var foundCurrent = false;
+        var foundNext = false;
+        var currentWeekSheet = null;
+        
+        // First pass: find current week
+        allWeekSheets.forEach(function(sheet) {
+            var sheetName = sheet.getName();
+            var dates = WeekSheet.parseDatesFromName(sheetName);
+            
+            if (!dates) {
+                Logger.log("Skipping sheet with unparseable dates: " + sheetName);
+                return;
+            }
+            
+            // Check if this week contains today (current week)
+            if (!foundCurrent && dates.firstDay <= today && today <= dates.lastDay) {
+                Logger.log("✓ Current week: " + sheetName);
+                relevantSheets.push(sheet);
+                currentWeekSheet = { sheet: sheet, dates: dates };
+                foundCurrent = true;
+            }
+        });
+        
+        // Second pass: find the next week (immediately after current week)
+        if (currentWeekSheet) {
+            var currentWeekEnd = currentWeekSheet.dates.lastDay;
+            var nextWeekCandidate = null;
+            var smallestGap = null;
+            
+            allWeekSheets.forEach(function(sheet) {
+                var sheetName = sheet.getName();
+                var dates = WeekSheet.parseDatesFromName(sheetName);
+                
+                if (!dates) return;
+                
+                // Check if this sheet starts after current week ends
+                if (dates.firstDay > currentWeekEnd) {
+                    var gap = dates.firstDay - currentWeekEnd;
+                    
+                    // Find the sheet that starts soonest after current week
+                    if (smallestGap === null || gap < smallestGap) {
+                        smallestGap = gap;
+                        nextWeekCandidate = sheet;
+                    }
+                }
+            });
+            
+            if (nextWeekCandidate) {
+                Logger.log("✓ Next week: " + nextWeekCandidate.getName());
+                relevantSheets.push(nextWeekCandidate);
+                foundNext = true;
+            }
+        }
+        
+        if (!foundCurrent) {
+            Logger.log("⚠ Warning: No current week sheet found! " + today);
+        }
+        if (!foundNext) {
+            Logger.log("⚠ Warning: No next week sheet found!");
+        }
+        
+        Logger.log("Syncing " + relevantSheets.length + " sheets (current week + next week)");
+        return relevantSheets;
     };
     Onestop.prototype.getEarliestDay = function () {
         var firstDayTimestamps = this.weeks.map(function (week) { return week.firstDay; }).map(function (firstDay) { return firstDay.getTime(); });
         return new Date(Math.min.apply(Math, firstDayTimestamps));
     };
     Onestop.prototype.getHashes = function () {
-        //console.log('weeks?', this.weeks);
         return this.weeks.reduce(function (weekHashData, week) {
             var _a;
             var hashWeekName = week.sheetName.replace(/\(WIP\)$/, '').trim();
@@ -67,10 +137,10 @@ var Onestop = /** @class */ (function () {
                 ministries: Object
                     .keys(ministriesToHash)
                     .filter(function (ministry) {
-                    var _a, _b;
-                    var hasSavedHash = !!((_a = savedHashes === null || savedHashes === void 0 ? void 0 : savedHashes[weekName]) === null || _a === void 0 ? void 0 : _a[ministry]);
-                    return !hasSavedHash || ministriesToHash[ministry] !== ((_b = savedHashes === null || savedHashes === void 0 ? void 0 : savedHashes[weekName]) === null || _b === void 0 ? void 0 : _b[ministry]);
-                })
+                        var _a, _b;
+                        var hasSavedHash = !!((_a = savedHashes === null || savedHashes === void 0 ? void 0 : savedHashes[weekName]) === null || _a === void 0 ? void 0 : _a[ministry]);
+                        return !hasSavedHash || ministriesToHash[ministry] !== ((_b = savedHashes === null || savedHashes === void 0 ? void 0 : savedHashes[weekName]) === null || _b === void 0 ? void 0 : _b[ministry]);
+                    })
             };
         }).filter(function (needsSync) { return needsSync.ministries.length !== 0; });
     };

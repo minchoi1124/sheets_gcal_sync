@@ -1,15 +1,15 @@
 // Compiled using wl-onestop 1.0.0 (TypeScript 4.9.5)
-var MINISTRIES = ['CPIs', 'Youth', 'Intl', 'Childcare', 'ALL', 'Joyland'];
+var MINISTRIES = ['Weekly'];
 
+// All events go to Weekly calendar regardless of MIN GROUP value
 var alt_tags = {
-    'CPIs': ['Weekly CPI'],
-    'Intl': ['Weekly Intl'],
-    'ALL': ['Weekly']
+    'Weekly': []
 };
 
+// Row validation regex - for date rows we expect datetime object in first column
 var row_regex = [
-    /^$/, // empty cell
-    /^[A-Z][a-z]{2},\s\d{1,2}\/\d{1,2}$/, // date cell e.g., "Sun, 8/20"
-    /^$/, // empty cell
-    /^.*$/ // any text for event title, can be empty
+    /^.*$/, // any value in first column (could be MIN GROUP text or START TIME)
+    /^.*$/, // START TIME or END TIME
+    /^.*$/, // END TIME or WHAT
+    /^.*$/  // WHAT or other content
 ]

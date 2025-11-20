@@ -1,13 +1,7 @@
 {
-  "timeZone": "America/New_York",
+  "timeZone": "America/Detroit",
   "dependencies": {
   },
-  "oauthScopes": [
-          "https://www.googleapis.com/auth/spreadsheets",
-          "https://www.googleapis.com/auth/script.scriptapp",
-          "https://www.googleapis.com/auth/calendar"
-  ],
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"
 }
-      
