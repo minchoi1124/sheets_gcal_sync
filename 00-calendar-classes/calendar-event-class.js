@@ -23,14 +23,28 @@ var CalendarEvent = /** @class */ (function () {
             this.isAllDayEvent = true;
         }
         else {
-            // Extract hours and minutes avoiding timezone issues with 1899 dates
-            // Get the time portion by using the date's time components
+            // Extract hours and minutes from the time value
+            // Google Sheets stores times as fractions of a day
+            // We need to extract the actual time without timezone conversions
             var timeDate = new Date(startTime);
-            // Use UTC methods to avoid historical timezone offsets from 1899
-            var hours = timeDate.getUTCHours();
-            var minutes = timeDate.getUTCMinutes();
 
-            Logger.log("setEventStart: original time=".concat(startTime, ", extracted UTC hours=").concat(hours, ", minutes=").concat(minutes));
+            // Get the time as milliseconds since the epoch for this date
+            var timeMs = timeDate.getTime();
+
+            // Calculate milliseconds since midnight of Dec 30, 1899 in LOCAL time
+            // Create a reference midnight in the same timezone as the time value
+            var midnightDate = new Date(timeDate);
+            midnightDate.setHours(0, 0, 0, 0);
+            var midnightMs = midnightDate.getTime();
+
+            // Calculate time since midnight
+            var timeSinceMidnight = timeMs - midnightMs;
+
+            // Convert to hours and minutes
+            var hours = Math.floor(timeSinceMidnight / (1000 * 60 * 60));
+            var minutes = Math.floor((timeSinceMidnight % (1000 * 60 * 60)) / (1000 * 60));
+
+            Logger.log("setEventStart: original time=".concat(startTime, ", extracted hours=").concat(hours, ", minutes=").concat(minutes));
 
             this.eventStart = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
@@ -41,13 +55,25 @@ var CalendarEvent = /** @class */ (function () {
             this.isAllDayEvent = true;
         }
         else {
-            // Extract hours and minutes avoiding timezone issues with 1899 dates
+            // Extract hours and minutes from the time value
             var timeDate = new Date(endTime);
-            // Use UTC methods to avoid historical timezone offsets from 1899
-            var hours = timeDate.getUTCHours();
-            var minutes = timeDate.getUTCMinutes();
 
-            Logger.log("setEventEnd: original time=".concat(endTime, ", extracted UTC hours=").concat(hours, ", minutes=").concat(minutes));
+            // Get the time as milliseconds since the epoch for this date
+            var timeMs = timeDate.getTime();
+
+            // Calculate milliseconds since midnight of Dec 30, 1899 in LOCAL time
+            var midnightDate = new Date(timeDate);
+            midnightDate.setHours(0, 0, 0, 0);
+            var midnightMs = midnightDate.getTime();
+
+            // Calculate time since midnight
+            var timeSinceMidnight = timeMs - midnightMs;
+
+            // Convert to hours and minutes
+            var hours = Math.floor(timeSinceMidnight / (1000 * 60 * 60));
+            var minutes = Math.floor((timeSinceMidnight % (1000 * 60 * 60)) / (1000 * 60));
+
+            Logger.log("setEventEnd: original time=".concat(endTime, ", extracted hours=").concat(hours, ", minutes=").concat(minutes));
 
             this.eventEnd = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
