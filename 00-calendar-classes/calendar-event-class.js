@@ -46,10 +46,20 @@ var CalendarEvent = /** @class */ (function () {
      *      false if event added successfully
      */
     CalendarEvent.prototype.addToCalendar = function () {
+        Logger.log("📅 Adding event to calendar: ".concat(this.eventTitle));
+        Logger.log("   Type: ".concat(this.isAllDayEvent ? "All-day" : "Timed"));
+
         if (this.isAllDayEvent) {
             var rowStartDate = this.eventStart.createDate(this.isAllDayEvent);
             var rowEndDate = this.eventEnd.createDate(this.isAllDayEvent);
             var eventEndDateToUse = this.eventStart.isSameDay(this.eventEnd) ? null : rowEndDate;
+
+            Logger.log("   Start date: ".concat(rowStartDate.toDateString()));
+            if (eventEndDateToUse) {
+                Logger.log("   End date: ".concat(eventEndDateToUse.toDateString()));
+            } else {
+                Logger.log("   End date: same as start (single day)");
+            }
 
             // exponential back off to prevent overloading the calendar service
             var tries = 0;
@@ -57,48 +67,64 @@ var CalendarEvent = /** @class */ (function () {
             var waitTime = 100;
             var scale = 1.5;
             try {
+                Logger.log("   Calling createAllDayEvent...");
                 this.gCalendarEvent = this.gCalendar.createAllDayEvent(this.eventTitle, rowStartDate, eventEndDateToUse, { description: this.getEventDescription() });
-            } catch {
+                Logger.log("   ✓ All-day event created successfully!");
+            } catch (error) {
+                Logger.log("   ⚠ Error on first try: ".concat(error.message));
                 while (tries < maxTries) {
                     try {
                         Utilities.sleep(waitTime);
                         this.gCalendarEvent = this.gCalendar.createAllDayEvent(this.eventTitle, rowStartDate, eventEndDateToUse, { description: this.getEventDescription() });
+                        Logger.log("   ✓ All-day event created on retry ".concat(tries + 1));
                         break;
-                    } catch {
+                    } catch (retryError) {
                         tries++;
                         waitTime = waitTime * scale;
+                        Logger.log("   ⚠ Retry ".concat(tries, " failed: ").concat(retryError.message));
                     }
                 }
                 if (tries >= maxTries) {
-                    Logger.log("Failed to add all day event: ".concat(this.eventTitle));
+                    Logger.log("   ✗ Failed to add all day event after ".concat(maxTries, " tries: ").concat(this.eventTitle));
                     return false;
-                }  
-            }          
+                }
+            }
         }
         else {
-            // exponential back off to prevent overloading the calendar 
+            var startDate = this.eventStart.createDate();
+            var endDate = this.eventEnd.createDate();
+
+            Logger.log("   Start: ".concat(startDate.toLocaleString()));
+            Logger.log("   End: ".concat(endDate.toLocaleString()));
+
+            // exponential back off to prevent overloading the calendar
             var tries = 0;
             var maxTries = 5;
             var waitTime = 100;
             var scale = 1.5;
             try {
-                this.gCalendarEvent = this.gCalendar.createEvent(this.eventTitle, this.eventStart.createDate(), this.eventEnd.createDate(), { description: this.getEventDescription() });
-            } catch {
+                Logger.log("   Calling createEvent...");
+                this.gCalendarEvent = this.gCalendar.createEvent(this.eventTitle, startDate, endDate, { description: this.getEventDescription() });
+                Logger.log("   ✓ Timed event created successfully!");
+            } catch (error) {
+                Logger.log("   ⚠ Error on first try: ".concat(error.message));
                 while (tries < maxTries) {
                     try {
                         Utilities.sleep(waitTime);
-                        this.gCalendarEvent = this.gCalendar.createEvent(this.eventTitle, this.eventStart.createDate(), this.eventEnd.createDate(), { description: this.getEventDescription() });
+                        this.gCalendarEvent = this.gCalendar.createEvent(this.eventTitle, startDate, endDate, { description: this.getEventDescription() });
+                        Logger.log("   ✓ Timed event created on retry ".concat(tries + 1));
                         break;
-                    } catch {
+                    } catch (retryError) {
                         tries++;
                         waitTime = waitTime * scale;
+                        Logger.log("   ⚠ Retry ".concat(tries, " failed: ").concat(retryError.message));
                     }
                 }
                 if (tries >= maxTries) {
-                    Logger.log("Failed to add timed event: ".concat(this.eventTitle));
+                    Logger.log("   ✗ Failed to add timed event after ".concat(maxTries, " tries: ").concat(this.eventTitle));
                     return false;
                 }
-            }    
+            }
         }
         return true;
     };
