@@ -171,12 +171,20 @@ var WeekSheet = /** @class */ (function () {
     WeekSheet.prototype.isRowDate = function (row) {
         // Date rows have a datetime object in the first column (MIN GROUP or START TIME column)
         var firstCell = row[0][0];
-        
+        var cols = this.columnValues;
+        var whatCell = row[0][cols.WHAT - 1]; // Column C for format 2
+
+        // If column C (WHAT) has content, this is an event row, not a date row
+        // Even if column A is a Date object (which happens for times like "7:00 AM")
+        if (whatCell && String(whatCell).trim() !== '') {
+            return false; // This is an event row, not a date row
+        }
+
         // Check if it's a Date object
         if (firstCell instanceof Date || Object.prototype.toString.call(firstCell) === '[object Date]') {
             return true;
         }
-        
+
         // Also check if the cell contains a date string that can be parsed
         if (typeof firstCell === 'string') {
             var dateTest = new Date(firstCell);
@@ -184,7 +192,7 @@ var WeekSheet = /** @class */ (function () {
                 return true;
             }
         }
-        
+
         return false;
     };
     
