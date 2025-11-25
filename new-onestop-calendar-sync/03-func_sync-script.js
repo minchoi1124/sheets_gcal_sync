@@ -36,3 +36,24 @@ function testFunction() {
     var startTimes = sheet.getRange(1, 2, 10, 2).getValues();
     Logger.log(startTimes);
 }
+
+// Helper function to manually reset the updating cell if it gets stuck
+function resetUpdatingCell() {
+    var onestop = new Onestop();
+    var currentValue = onestop.checkIsBeingUpdated();
+    Logger.log("Current isUpdatingCell value: " + currentValue);
+
+    onestop.setIsBeingUpdated(false);
+    Logger.log("Reset isUpdatingCell to false");
+
+    var newValue = onestop.checkIsBeingUpdated();
+    Logger.log("New isUpdatingCell value: " + newValue);
+}
+
+// Helper function to manually clear all hashes and force a full resync
+function forceFullResync() {
+    Logger.log("Clearing all saved hashes to force full resync...");
+    var onestop = new Onestop();
+    onestop.clearHashes();
+    Logger.log("Hashes cleared. Next sync will update all sheets.");
+}

@@ -127,9 +127,11 @@ var Onestop = /** @class */ (function () {
         this.scheduleHashesRange.clear();
     };
     Onestop.prototype.weekNamesAndMinistriesThatNeedSync = function () {
-        var savedHashes = JSON.parse(this.onestopSheet.getSheetByName('SyncHashes').getRange(1, 1).getValue() || {});
+        var savedHashesValue = this.onestopSheet.getSheetByName('SyncHashes').getRange(1, 1).getValue() || '{}';
+        Logger.log("Saved hashes value: " + savedHashesValue);
+        var savedHashes = JSON.parse(savedHashesValue);
         var currentHashes = this.getHashes();
-        console.log('current hashes? ', currentHashes);
+        Logger.log('Current hashes: ' + JSON.stringify(currentHashes));
         return Object.keys(currentHashes).map(function (weekName) {
             var ministriesToHash = currentHashes[weekName];
             return {
