@@ -115,7 +115,6 @@ var WeekSheet = /** @class */ (function () {
     };
     
     WeekSheet.prototype.parseDatesFromSheetName = function () {
-        Logger.log("In parseDatesFromSheetName")
         var dates = WeekSheet.parseDatesFromName(this.sheetName);
         
         if (dates) {

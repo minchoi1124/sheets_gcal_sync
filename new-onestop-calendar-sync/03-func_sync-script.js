@@ -117,6 +117,9 @@ function fixAndSyncNow() {
     Logger.log("=== Starting fixAndSyncNow ===");
 
     // Step 1: Reset the updating cell
+// All-in-one function to fix everything and sync immediately
+function fixAndSyncNow() {
+    Logger.log("=== Starting fixAndSyncNow ===");
     Logger.log("Step 1: Resetting updating cell...");
     var onestop = new Onestop();
     onestop.setIsBeingUpdated(false);
@@ -137,6 +140,15 @@ function fixAndSyncNow() {
     OnestopCalendarController.updateAllMinistries();
     Logger.log("✓ Sync completed!");
 
+    Logger.log("Step 2: Clearing saved hashes...");
+    onestop.clearHashes();
+    Logger.log("✓ Hashes cleared");
+    Logger.log("Step 3: Grabbing calendars...");
+    OnestopCalendarController.grabCalendars();
+    Logger.log("✓ Calendars initialized");
+    Logger.log("Step 4: Running sync...");
+    OnestopCalendarController.updateAllMinistries();
+    Logger.log("✓ Sync completed!");
     Logger.log("=== Finished fixAndSyncNow ===");
     Logger.log("Check your calendar - events should now be there!");
 }
