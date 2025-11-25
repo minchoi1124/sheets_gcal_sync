@@ -218,11 +218,16 @@ var WeekSheet = /** @class */ (function () {
         
         for (var i = 2; i <= numRows; i++) {
             var row = this.gSheet.getRange(i, 1, 1, 10).getValues();
-            
+
             var isDate = this.isRowDate(row);
             var rowType = this.getRowType(row, isDate);
-            
+
+            // Log ALL rows for debugging
+            Logger.log("Row ".concat(i, ": A='").concat(row[0][0], "' B='").concat(row[0][1], "' C='").concat(row[0][2], "'"));
+            Logger.log("  isDate: ".concat(isDate, ", rowType: ").concat(rowType));
+
             if (rowType === 0) {
+                Logger.log("  ⚠ SKIPPED - Invalid row type");
                 continue; // Skip invalid rows
             }
             
