@@ -24,27 +24,17 @@ var CalendarEvent = /** @class */ (function () {
         }
         else {
             // Extract hours and minutes from the time value
-            // Google Sheets stores times as fractions of a day
-            // We need to extract the actual time without timezone conversions
+            // The issue: 1899 dates have historical timezone offset (GMT-0532) vs modern EST (GMT-0500)
+            // Solution: Format as string and parse the time portion
             var timeDate = new Date(startTime);
 
-            // Get the time as milliseconds since the epoch for this date
-            var timeMs = timeDate.getTime();
+            // Format the time and extract hours/minutes from the string
+            var timeString = timeDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            var timeParts = timeString.split(':');
+            var hours = parseInt(timeParts[0], 10);
+            var minutes = parseInt(timeParts[1], 10);
 
-            // Calculate milliseconds since midnight of Dec 30, 1899 in LOCAL time
-            // Create a reference midnight in the same timezone as the time value
-            var midnightDate = new Date(timeDate);
-            midnightDate.setHours(0, 0, 0, 0);
-            var midnightMs = midnightDate.getTime();
-
-            // Calculate time since midnight
-            var timeSinceMidnight = timeMs - midnightMs;
-
-            // Convert to hours and minutes
-            var hours = Math.floor(timeSinceMidnight / (1000 * 60 * 60));
-            var minutes = Math.floor((timeSinceMidnight % (1000 * 60 * 60)) / (1000 * 60));
-
-            Logger.log("setEventStart: original time=".concat(startTime, ", extracted hours=").concat(hours, ", minutes=").concat(minutes));
+            Logger.log("setEventStart: original=".concat(startTime, ", timeString=").concat(timeString, ", hours=").concat(hours, ", minutes=").concat(minutes));
 
             this.eventStart = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
@@ -58,22 +48,13 @@ var CalendarEvent = /** @class */ (function () {
             // Extract hours and minutes from the time value
             var timeDate = new Date(endTime);
 
-            // Get the time as milliseconds since the epoch for this date
-            var timeMs = timeDate.getTime();
+            // Format the time and extract hours/minutes from the string
+            var timeString = timeDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            var timeParts = timeString.split(':');
+            var hours = parseInt(timeParts[0], 10);
+            var minutes = parseInt(timeParts[1], 10);
 
-            // Calculate milliseconds since midnight of Dec 30, 1899 in LOCAL time
-            var midnightDate = new Date(timeDate);
-            midnightDate.setHours(0, 0, 0, 0);
-            var midnightMs = midnightDate.getTime();
-
-            // Calculate time since midnight
-            var timeSinceMidnight = timeMs - midnightMs;
-
-            // Convert to hours and minutes
-            var hours = Math.floor(timeSinceMidnight / (1000 * 60 * 60));
-            var minutes = Math.floor((timeSinceMidnight % (1000 * 60 * 60)) / (1000 * 60));
-
-            Logger.log("setEventEnd: original time=".concat(endTime, ", extracted hours=").concat(hours, ", minutes=").concat(minutes));
+            Logger.log("setEventEnd: original=".concat(endTime, ", timeString=").concat(timeString, ", hours=").concat(hours, ", minutes=").concat(minutes));
 
             this.eventEnd = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
