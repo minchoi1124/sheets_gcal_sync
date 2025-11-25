@@ -220,13 +220,26 @@ var WeekSheet = /** @class */ (function () {
                 // Date row
                 var dateCell = row[0][0];
                 var possibleDate = new Date(dateCell);
-                
+
                 if (!isNaN(possibleDate.getTime())) {
-                    this.dailyData.push(new DaySection(
-                        possibleDate.getFullYear(), 
-                        possibleDate.getMonth(), 
-                        possibleDate.getDate()
-                    ));
+                    // Extract month and day from the cell
+                    var month = possibleDate.getMonth();
+                    var day = possibleDate.getDate();
+
+                    // Determine the correct year based on the week's date range
+                    // Use firstDay's year, unless the month suggests we've crossed into the next year
+                    var year = this.firstDay.getFullYear();
+
+                    // If this is December and firstDay is in November/December, use firstDay's year
+                    // If this is January and firstDay is in December, use firstDay's year + 1
+                    if (month === 0 && this.firstDay.getMonth() === 11) {
+                        // January date when week starts in December - use next year
+                        year = this.firstDay.getFullYear() + 1;
+                    }
+
+                    Logger.log("Parsed date row: ".concat(month + 1, "/").concat(day, "/").concat(year));
+
+                    this.dailyData.push(new DaySection(year, month, day));
                 }
             } else {
                 // Event row
