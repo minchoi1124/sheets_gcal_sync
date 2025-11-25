@@ -23,7 +23,16 @@ var CalendarEvent = /** @class */ (function () {
             this.isAllDayEvent = true;
         }
         else {
-            this.eventStart = new CalendarDate(dateData.year, dateData.month, dateData.day, new Date(startTime).getHours(), new Date(startTime).getMinutes());
+            // Extract hours and minutes avoiding timezone issues with 1899 dates
+            // Get the time portion by using the date's time components
+            var timeDate = new Date(startTime);
+            // Use UTC methods to avoid historical timezone offsets from 1899
+            var hours = timeDate.getUTCHours();
+            var minutes = timeDate.getUTCMinutes();
+
+            Logger.log("setEventStart: original time=".concat(startTime, ", extracted UTC hours=").concat(hours, ", minutes=").concat(minutes));
+
+            this.eventStart = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
     };
     CalendarEvent.prototype.setEventEnd = function (dateData, endTime) {
@@ -32,7 +41,15 @@ var CalendarEvent = /** @class */ (function () {
             this.isAllDayEvent = true;
         }
         else {
-            this.eventEnd = new CalendarDate(dateData.year, dateData.month, dateData.day, new Date(endTime).getHours(), new Date(endTime).getMinutes());
+            // Extract hours and minutes avoiding timezone issues with 1899 dates
+            var timeDate = new Date(endTime);
+            // Use UTC methods to avoid historical timezone offsets from 1899
+            var hours = timeDate.getUTCHours();
+            var minutes = timeDate.getUTCMinutes();
+
+            Logger.log("setEventEnd: original time=".concat(endTime, ", extracted UTC hours=").concat(hours, ", minutes=").concat(minutes));
+
+            this.eventEnd = new CalendarDate(dateData.year, dateData.month, dateData.day, hours, minutes);
         }
     };
     CalendarEvent.prototype.addErrorEventToCalendar = function () {
