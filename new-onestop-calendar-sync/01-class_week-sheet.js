@@ -150,7 +150,7 @@ var WeekSheet = /** @class */ (function () {
             location: eventRange.getCell(1, cols.LOCATION).getValue(),
             inCharge: eventRange.getCell(1, cols.IN_CHARGE).getValue(),
             whoElse: eventRange.getCell(1, cols.WHO_ELSE).getValue(),
-            food: eventRange.getCell(1, cols.FOOD).getValue(),
+            transportation: eventRange.getCell(1, cols.TRANSPORTATION).getValue(),
             childcare: eventRange.getCell(1, cols.CHILDCARE).getValue(),
             note: eventRange.getCell(1, cols.NOTE).getValue(),
             struckThrough: eventRange.getCell(1, cols.WHAT).getFontLine() === 'line-through',
