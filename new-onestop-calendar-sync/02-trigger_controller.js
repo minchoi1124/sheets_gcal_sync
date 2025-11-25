@@ -9,16 +9,32 @@ var TriggerController = /** @class */ (function () {
         Logger.log('Executing updateCalendars from trigger');
         this.getCurrentTriggers();
         if (this.nonDailyUpdateCalendarTriggers.length > 1) {
+            Logger.log('Multiple triggers detected, filtering to keep only the last one');
             this.filterTriggersForLast();
             return;
         }
-        Logger.log('here2');
-        if (!this.onestop.checkIsBeingUpdated()) {
-            Logger.log('here3');
-            this.onestop.setIsBeingUpdated(true);
-            OnestopCalendarController.updateAllMinistries();
-            this.onestop.setIsBeingUpdated(false);
+
+        var isCurrentlyUpdating = this.onestop.checkIsBeingUpdated();
+        Logger.log('Is currently updating: ' + isCurrentlyUpdating);
+
+        if (!isCurrentlyUpdating) {
+            Logger.log('Starting calendar update...');
+            try {
+                this.onestop.setIsBeingUpdated(true);
+                OnestopCalendarController.updateAllMinistries();
+                Logger.log('Calendar update completed successfully');
+            } catch (error) {
+                Logger.log('ERROR during calendar update: ' + error.message);
+                throw error;
+            } finally {
+                // Always reset the updating flag, even if there was an error
+                this.onestop.setIsBeingUpdated(false);
+                Logger.log('Reset isUpdatingCell to false');
+            }
+        } else {
+            Logger.log('Skipping update - another update is already in progress');
         }
+
         this.nonDailyUpdateCalendarTriggers.forEach(function (trigger) {
             ScriptApp.deleteTrigger(trigger);
         });
