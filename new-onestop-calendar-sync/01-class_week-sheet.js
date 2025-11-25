@@ -137,15 +137,25 @@ var WeekSheet = /** @class */ (function () {
     WeekSheet.prototype.eventDataFromRow = function (row) {
         var cols = this.columnValues;
         var eventRange = this.gSheet.getRange(row, 1, 1, 10);
-        
+
+        var startVal = eventRange.getCell(1, cols.START).getValue();
+        var endVal = eventRange.getCell(1, cols.END).getValue();
+        var whatVal = eventRange.getCell(1, cols.WHAT).getValue();
+
+        Logger.log("Row ".concat(row, " - Event: ").concat(whatVal));
+        Logger.log("  Start value: ".concat(startVal, " (type: ").concat(typeof startVal, ")"));
+        Logger.log("  End value: ".concat(endVal, " (type: ").concat(typeof endVal, ")"));
+        Logger.log("  IS_ALL_DAY(start): ".concat(IS_ALL_DAY(startVal)));
+        Logger.log("  IS_ALL_DAY(end): ".concat(IS_ALL_DAY(endVal)));
+
         return {
             row: row,
             ministry: 'Weekly', // All events are Weekly
-            startTimeDate: new Date(eventRange.getCell(1, cols.START).getValue()),
-            endTimeDate: new Date(eventRange.getCell(1, cols.END).getValue()),
-            startTime: eventRange.getCell(1, cols.START).getValue(),
-            endTime: eventRange.getCell(1, cols.END).getValue(),
-            what: eventRange.getCell(1, cols.WHAT).getValue(),
+            startTimeDate: new Date(startVal),
+            endTimeDate: new Date(endVal),
+            startTime: startVal,
+            endTime: endVal,
+            what: whatVal,
             location: eventRange.getCell(1, cols.LOCATION).getValue(),
             inCharge: eventRange.getCell(1, cols.IN_CHARGE).getValue(),
             whoElse: eventRange.getCell(1, cols.WHO_ELSE).getValue(),
@@ -153,7 +163,7 @@ var WeekSheet = /** @class */ (function () {
             childcare: eventRange.getCell(1, cols.CHILDCARE).getValue(),
             note: eventRange.getCell(1, cols.NOTE).getValue(),
             struckThrough: eventRange.getCell(1, cols.WHAT).getFontLine() === 'line-through',
-            allDayEvent: IS_ALL_DAY(eventRange.getCell(1, cols.START).getValue()) && IS_ALL_DAY(eventRange.getCell(1, cols.END).getValue())
+            allDayEvent: IS_ALL_DAY(startVal) && IS_ALL_DAY(endVal)
         };
     };
     
@@ -249,12 +259,17 @@ var WeekSheet = /** @class */ (function () {
                 }
                 
                 var eventData = this.eventDataFromRow(i);
-                
+
+                Logger.log("  Row type: ".concat(rowType === 1 ? "All-day (1)" : rowType === 2 ? "Timed (2)" : "Unknown"));
+                Logger.log("  Initial allDayEvent from data: ".concat(eventData.allDayEvent));
+
                 if (rowType === 1) {
                     eventData.allDayEvent = true;
                 } else {
                     eventData.allDayEvent = false;
                 }
+
+                Logger.log("  Final allDayEvent: ".concat(eventData.allDayEvent));
                 
                 if (eventData.what && !eventData.struckThrough) {
                     var mostRecentDay = this.dailyData[this.dailyData.length - 1];
