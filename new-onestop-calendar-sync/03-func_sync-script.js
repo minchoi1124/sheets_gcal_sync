@@ -115,11 +115,6 @@ function testCalendarConnection() {
 // All-in-one function to fix everything and sync immediately
 function fixAndSyncNow() {
     Logger.log("=== Starting fixAndSyncNow ===");
-
-    // Step 1: Reset the updating cell
-// All-in-one function to fix everything and sync immediately
-function fixAndSyncNow() {
-    Logger.log("=== Starting fixAndSyncNow ===");
     Logger.log("Step 1: Resetting updating cell...");
     var onestop = new Onestop();
     onestop.setIsBeingUpdated(false);
