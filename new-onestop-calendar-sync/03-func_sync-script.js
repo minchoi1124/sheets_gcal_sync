@@ -58,6 +58,60 @@ function forceFullResync() {
     Logger.log("Hashes cleared. Next sync will update all sheets.");
 }
 
+// Test function to verify calendar connection and event creation
+function testCalendarConnection() {
+    Logger.log("=== Testing Calendar Connection ===");
+
+    // Get the calendar ID from constants
+    Logger.log("Calendar ID: " + WEEKLY_CALENDAR_ID);
+
+    try {
+        // Try to get the calendar
+        var calendar = CalendarApp.getCalendarById(WEEKLY_CALENDAR_ID);
+
+        if (!calendar) {
+            Logger.log("❌ ERROR: Could not get calendar with ID: " + WEEKLY_CALENDAR_ID);
+            Logger.log("Check that:");
+            Logger.log("1. The calendar ID is correct");
+            Logger.log("2. You have access to this calendar");
+            Logger.log("3. The calendar hasn't been deleted");
+            return;
+        }
+
+        Logger.log("✓ Successfully retrieved calendar: " + calendar.getName());
+
+        // Create a test event for tomorrow
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+
+        var endTime = new Date(tomorrow);
+        endTime.setHours(11, 0, 0, 0);
+
+        Logger.log("Creating test event for: " + tomorrow.toLocaleString());
+
+        var testEvent = calendar.createEvent(
+            "🧪 TEST EVENT - Calendar Sync Working!",
+            tomorrow,
+            endTime,
+            { description: "This is a test event created by the sync script. You can delete this." }
+        );
+
+        Logger.log("✓ SUCCESS! Test event created with ID: " + testEvent.getId());
+        Logger.log("✓ Event title: " + testEvent.getTitle());
+        Logger.log("✓ Event time: " + testEvent.getStartTime().toLocaleString());
+        Logger.log("");
+        Logger.log("Check your calendar now - you should see the test event tomorrow at 10 AM!");
+        Logger.log("If you see it, the calendar connection is working correctly.");
+
+    } catch (error) {
+        Logger.log("❌ ERROR: " + error.message);
+        Logger.log("Stack trace: " + error.stack);
+    }
+
+    Logger.log("=== Test Complete ===");
+}
+
 // All-in-one function to fix everything and sync immediately
 function fixAndSyncNow() {
     Logger.log("=== Starting fixAndSyncNow ===");
